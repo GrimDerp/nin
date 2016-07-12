@@ -3,6 +3,7 @@
 var fs = require('fs');
 var path = require('path');
 var program = require('commander');
+var shelljs = require('shelljs/global');
 
 var compile = require('./compile');
 var generate = require('./generate/generate');
@@ -61,6 +62,29 @@ program
   .action(function(resource, name) {
     var projectRoot = utils.findProjectRootOrExit(process.cwd());
     generate.generate(projectRoot, resource, name);
+  });
+
+program
+  .command('update')
+  .description('Update nin to newest version')
+  .action(function() {
+    echo('Checking for new version of nin');
+
+    // normalize nin path to point to /path/to/nin-project/nin
+    var ninExecutable = __dirname;
+    var ninPath = ninExecutable.split('/');
+    var ninPath = ninPath.splice(0, ninPath.length-2).join('/');
+
+    cd(ninPath);
+    var gitGoToMaster = exec('git checkout master');
+    if(!(gitGoToMaster.code == 0)) {
+      console.error('Could not update nin, please resolve conflicts before updating');
+      exit(0);
+    }
+
+    var gitUpdate = exec('git pull');
+    exec('make');
+    echo('nin has been updated to newest master');
   });
 
 program.parse(process.argv);
